@@ -10,11 +10,11 @@ To run the application, navigate to the root folder into which you have cloned t
 ```terminal
 make
 ```
-<sub><sup>The makefile assumes the use of gcc to compile. If you use any other compiler, for example "clang", go into the <b>makefile</b> and change "CC = gcc" to:
+
+The makefile assumes the use of gcc to compile. If you use any other compiler, for example "clang", go into the <b>makefile</b> and change "CC = gcc" to:
 ```
 CC = name-of-complier
 ```
-</sup></sub>
 
 ### For Windows:
 Makefile is not inherently supported in Windows. Instead of using a makefile, enter this into your terminal.
@@ -23,7 +23,7 @@ Makefile is not inherently supported in Windows. Instead of using a makefile, en
 gcc main.c -o main -lm
 ```
 
-<sup><sub>Note: Replace "gcc" with the name of your compiler if you are using a different compiler.</sup></sub>
+Note: Replace "gcc" with the name of your compiler if you are using a different compiler.
 
 Then to run it, simply enter:
 ```terminal
