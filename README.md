@@ -36,7 +36,9 @@ main
 # Files
 * main.c: Contains all the C code
 
-* data.csv: Contains the Boston Housing Data
+* data.csv: Contains the Boston Housing Data (For training)
+
+* data.csv: Contains the Boston Housing Data (For testing)
 
 * makefile: To compile the file(s)
 
