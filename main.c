@@ -2,71 +2,73 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 
-#define MAX_ROWS 506    // Maximum number of rows in the CSV file
+#define TRAIN_ROWS 456    // Maximum number of rows in the CSV file
 #define MAX_COLS 14    // Maximum number of columns in the CSV file
-#define x_vals 13
+#define x_vals (MAX_COLS-1)
+#define TEST_ROWS 50
 
 int p = 0;
 
 
-double cost(double w[x_vals], float b, int COUNT, float train[MAX_ROWS][MAX_COLS])
+double cost(double w[x_vals], float b, float test[TEST_ROWS][MAX_COLS])
 {
     double result = 0, y_p=0;
-    for (int i = 0; i < COUNT; i++)
+    for (int i = 0; i < TEST_ROWS; i++)
     {
         y_p=0;
         for (int j=0; j<x_vals;j++)
         {
-        y_p += w[j] * train[i][j];
+        y_p += w[j] * test[i][j];
         }
         y_p+=b;
-        float t =y_p - train[i][13];
+        float t =y_p - test[i][13];
         result+=t*t;
     }
-    double tmp = result/COUNT;
+    double tmp = result/TEST_ROWS;
     return tmp;
 }
 
-double rmse(double w[x_vals], float b, int COUNT, float train[MAX_ROWS][MAX_COLS])
+double rmse(double w[x_vals], float b, float test[TEST_ROWS][MAX_COLS])
 {
     double result = 0, y_p=0;
-    for (int i = 0; i < COUNT; i++)
+    for (int i = 0; i < TEST_ROWS; i++)
     {
         y_p=0;
         for (int j=0; j<x_vals;j++)
         {
-        y_p += w[j] * train[i][j];
+        y_p += w[j] * test[i][j];
         }
         y_p+=b;
-        float t =y_p - train[i][13];
+        float t =y_p - test[i][13];
         result+=t*t;
     }
-    double tmp = result/COUNT;
+    double tmp = result/TEST_ROWS;
     return pow(tmp,.5);
 }
 
-double acc(double w[x_vals], float b, int COUNT, float train[MAX_ROWS][MAX_COLS])
+double acc(double w[x_vals], float b, float test[TEST_ROWS][MAX_COLS])
 {
     double result = 0, y_p=0,t;
-    for (int i = 0; i < COUNT; i++)
+    for (int i = 0; i < TEST_ROWS; i++)
     {
         y_p=0;
         for (int j=0; j<x_vals;j++)
         {
-        y_p += w[j] * train[i][j];
+        y_p += w[j] * test[i][j];
         }
         y_p+=b;
-        t =fabs(y_p - train[i][13])/train[i][13];
+        t =fabs(y_p - test[i][13])/test[i][13];
         result+=t;
     }
-    double tmp = result/COUNT;
+    double tmp = result/TEST_ROWS;
     return (100-tmp*100);
 }
 
 
-void gradiant(float train[MAX_ROWS][MAX_COLS], int COUNT,double w[MAX_COLS], double b,double rate)
+void gradiant(float train[TRAIN_ROWS][MAX_COLS],double w[MAX_COLS], double b,double rate, float test[TEST_ROWS][MAX_COLS])
 {
     double x[x_vals],y;
     double dw[x_vals];
@@ -76,9 +78,8 @@ void gradiant(float train[MAX_ROWS][MAX_COLS], int COUNT,double w[MAX_COLS], dou
     }
     double db = 0;
     double y_p = 0;
-    //double* tmp = (double*)malloc(11 * sizeof(double));
 
-    for (int i =0; i < COUNT; i++)
+    for (int i =0; i < TRAIN_ROWS; i++)
     {
         y_p = 0;
         for (int j=0; j<x_vals;j++)
@@ -102,22 +103,23 @@ void gradiant(float train[MAX_ROWS][MAX_COLS], int COUNT,double w[MAX_COLS], dou
         db+=dj_db_i;
     }
     for (int i = 0; i<x_vals; i++){
-        w[i] -= (dw[i]/COUNT)*rate; //dw
+        w[i] -= (dw[i]/TRAIN_ROWS)*rate; //dw
     }
     
     p++;
     if (p%10000 == 0 || p == 1 )
     {
-        printf("c : %lf\n", cost(w,b,COUNT,train));
-        
-        printf("--%lf\n", acc(w,b,COUNT,train));
+        printf("Epoch: %d\n", p);
+        printf("Cost : %lf\n", cost(w,b,test));
+        printf("Accuracy: %lf\n", acc(w,b,test));
     }
 }
 
 
-void csvopener(float train[MAX_ROWS][MAX_COLS], char filename[])
+void csvopener(float train[TRAIN_ROWS][MAX_COLS],float test[TEST_ROWS][MAX_COLS])
 {
-    filename = "data.csv";
+    char filename[] = "data.csv";
+    char testname[] = "test.csv";
     FILE *csvFile;
     char line[1000];
     char *token;
@@ -130,7 +132,7 @@ void csvopener(float train[MAX_ROWS][MAX_COLS], char filename[])
         return;
     }
 
-    // Read lines from the CSV file and parse them into the 2D array
+    // Read lines from the train CSV file and parse them into the 2D array
     while (fgets(line, sizeof(line), csvFile)) {
         token = strtok(line, ",");
         cols = 0;
@@ -141,62 +143,63 @@ void csvopener(float train[MAX_ROWS][MAX_COLS], char filename[])
         }
         rows++;
     }
+    fclose(csvFile);
 
+    csvFile = fopen(testname, "r");
+    if (csvFile == NULL) {
+        perror("Error opening file");
+        return;
+    }
+
+    // Read lines from the test CSV file and parse them into the 2D array
+    rows=0;
+    cols=0;
+    while (fgets(line, sizeof(line), csvFile)) {
+        token = strtok(line, ",");
+        cols = 0;
+        while (token != NULL) {
+            test[rows][cols] = atof(token);
+            cols++;
+            token = strtok(NULL, ",");
+        }
+        rows++;
+    }
     fclose(csvFile);
 }
 
 
 int main()
 {
-    float train[MAX_ROWS][MAX_COLS];
+    float train[TRAIN_ROWS][MAX_COLS];
+    float test[TEST_ROWS][MAX_COLS];
 
-    csvopener(train,"data.csv");
+    csvopener(train,test);
 
-    int COUNT = sizeof(train)/sizeof(train[0]);
 
-    srand(10);
+    srand(time(NULL));
     double w[MAX_COLS];
     for (int i=0; i < MAX_COLS;i++)
     {
-        w[i] = 0;
+        w[i] = (rand()/RAND_MAX)/2;
     }
     double b = (rand()/RAND_MAX);
     int epoch = 1000000;
-    //double h = 1e-5;
-    double rate = 1e-8;
-
-    /*
-    for (int i = 0; i < epoch; i++)
-    {
-        float acc = cost(w,b);
-        double dw = (cost(w + h, b) - acc);
-        double db = (cost(w , b+h) - acc);
-
-        w -= dw;
-        b -= db;
-    }
-    */
-
+    double rate = 1e-6;
 
 
     for (int i = 0; i < epoch; i++)
     {
-        gradiant(train,COUNT,w,b,rate);
-        if (p%5000 == 0)
-        {
-            rate = 1e-6;
-        }
+        gradiant(train,w,b,rate,test);
     }
-    double xyz=0;
+
     for (int l = 0; l<x_vals; l++)
     {
     printf("w%i = %lf \n",l, w[l]);
-        xyz+= w[l]*train[0][l];
     }
-    xyz+=b;
     printf("b = %lf \n", b);
 
     
-    printf("--%lf", acc(w,b,COUNT,train));
+    printf("Accuracy: %lf\n", acc(w,b,test));
+    printf("RMSE: %lf\n", rmse(w,b,test));
 
 }
